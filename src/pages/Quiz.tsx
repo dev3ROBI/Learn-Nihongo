@@ -88,7 +88,7 @@ export default function Quiz() {
   }
 
   if (questions.length === 0) {
-    return <div className="text-center text-secondary/60 py-12">লোড হচ্ছে...</div>
+    return <div className="text-center text-text-muted py-12">লোড হচ্ছে...</div>
   }
 
   if (finished) {
@@ -96,13 +96,10 @@ export default function Quiz() {
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">{percentage >= 80 ? '🎉' : percentage >= 50 ? '👍' : '💪'}</div>
-        <h2 className="text-3xl font-bold text-secondary mb-2">কুইজ শেষ!</h2>
-        <p className="text-xl text-secondary/80 mb-2">আপনার স্কোর: {score} / {questions.length}</p>
-        <p className="text-lg text-primary mb-6">{percentage}% সঠিক</p>
-        <button
-          onClick={generateQuestions}
-          className="bg-primary text-secondary px-8 py-3 rounded-xl text-lg font-semibold hover:bg-primary/80 transition"
-        >
+        <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">কুইজ শেষ!</h2>
+        <p className="text-lg sm:text-xl text-text-muted mb-2">আপনার স্কোর: {score} / {questions.length}</p>
+        <p className="text-primary font-semibold mb-6">{percentage}% সঠিক</p>
+        <button onClick={generateQuestions} className="btn-primary">
           আবার খেলুন
         </button>
       </div>
@@ -113,17 +110,17 @@ export default function Quiz() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-secondary mb-6">কুইজ 🎯</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-6">কুইজ 🎯</h1>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === tab.key
-                ? 'bg-primary text-secondary'
-                : 'bg-white/10 text-secondary/70 hover:bg-white/20'
+                ? 'bg-primary text-white'
+                : 'bg-surface text-text-muted hover:bg-surface-hover border border-border'
             }`}
           >
             {tab.label}
@@ -131,22 +128,24 @@ export default function Quiz() {
         ))}
       </div>
 
-      <div className="text-center mb-2 text-secondary/60">
+      <div className="text-center mb-2 text-text-muted text-sm">
         প্রশ্ন {currentIndex + 1} / {questions.length} | স্কোর: {score}
       </div>
 
-      <div className="bg-white/10 backdrop-blur rounded-2xl p-8 mb-6 text-center">
-        <div className="text-7xl mb-4">{q.question}</div>
+      <div className="card p-6 sm:p-8 mb-6 text-center max-w-lg mx-auto">
+        <div className="text-6xl sm:text-7xl mb-4">{q.question}</div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
         {q.options.map((opt: string, i: number) => {
           const isCorrect = opt === q.correct
           const isSelected = opt === selected
-          let btnClass = 'bg-white/10 hover:bg-white/20 border border-white/20'
+          let btnClass = 'bg-surface hover:bg-surface-hover border border-border text-text-main'
 
           if (isSelected) {
-            btnClass = isCorrect ? 'bg-green-500/80 border-green-400' : 'bg-red-500/80 border-red-400'
+            btnClass = isCorrect
+              ? 'bg-success-bg border-success text-success font-semibold'
+              : 'bg-error-bg border-error text-error font-semibold'
           }
 
           return (
@@ -154,7 +153,7 @@ export default function Quiz() {
               key={i}
               onClick={() => handleAnswer(opt)}
               disabled={selected !== null}
-              className={`${btnClass} text-secondary rounded-xl p-4 text-lg font-medium transition-all duration-200 disabled:cursor-not-allowed`}
+              className={`${btnClass} rounded-xl p-3 sm:p-4 text-sm sm:text-base font-medium transition-all duration-200 disabled:cursor-not-allowed active:scale-[0.98]`}
             >
               {opt}
             </button>

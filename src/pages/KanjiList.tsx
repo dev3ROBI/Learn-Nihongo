@@ -20,25 +20,29 @@ export default function KanjiList() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-secondary mb-6">কানজি <span className="text-primary">漢</span></h1>
-      <p className="text-secondary/70 mb-4">মোট {data.length}টি N5 কানজি। সার্চ করে খুঁজুন।</p>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-text-main">
+          কানজি <span className="text-primary">漢</span>
+        </h1>
+        <p className="text-text-muted mt-1">মোট {data.length}টি N5 কানজি। সার্চ করে খুঁজুন।</p>
+      </div>
 
       <input
         type="text"
         placeholder="🔍 কানজি বা অর্থ লিখুন..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-secondary placeholder-secondary/50 mb-6 focus:outline-none focus:border-primary"
+        className="input-field mb-6"
       />
 
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
         {filtered.map(item => (
           <ItemCard key={item.char} char={item.char} to={`/kanji/${encodeURIComponent(item.char)}`} />
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-secondary/60 py-8">কোনো ফলাফল পাওয়া যায়নি</p>
+        <p className="text-center text-text-muted py-8">কোনো ফলাফল পাওয়া যায়নি</p>
       )}
     </div>
   )

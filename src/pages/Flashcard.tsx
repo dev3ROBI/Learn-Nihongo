@@ -14,25 +14,29 @@ export default function Flashcard() {
   useEffect(() => {
     Promise.all([loadHiragana(), loadKatakana(), loadKanji()]).then(([h, k, kj]) => {
       const all = category === 'hiragana' ? h : category === 'katakana' ? k : kj
-      setData(all)
+      setData(all as QuizItem[])
       setIndex(0)
       setFlipped(false)
     })
   }, [category])
 
   const current = data[index] as any
-  if (!current) return <div className="text-center text-secondary/60 py-12">লোড হচ্ছে...</div>
+  if (!current) return <div className="text-center text-text-muted py-12">লোড হচ্ছে...</div>
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-secondary mb-6">ফ্ল্যাশকার্ড 🃏</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-6">ফ্ল্যাশকার্ড 🃏</h1>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {(['hiragana', 'katakana', 'kanji'] as Category[]).map(c => (
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`px-4 py-2 rounded-lg text-sm ${category === c ? 'bg-primary text-secondary' : 'bg-white/10 text-secondary/70'}`}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition ${
+              category === c
+                ? 'bg-primary text-white'
+                : 'bg-surface text-text-muted hover:bg-surface-hover border border-border'
+            }`}
           >
             {c === 'hiragana' ? 'হিরাগানা' : c === 'katakana' ? 'কাটাকানা' : 'কানজি'}
           </button>
@@ -42,48 +46,49 @@ export default function Flashcard() {
       <div className="max-w-md mx-auto">
         <div
           onClick={() => setFlipped(!flipped)}
-          className="bg-white/10 backdrop-blur rounded-2xl p-12 text-center min-h-[300px] flex flex-col items-center justify-center cursor-pointer hover:bg-white/15 transition border border-white/20"
+          className="card p-8 sm:p-12 text-center min-h-[280px] sm:min-h-[320px] flex flex-col items-center justify-center cursor-pointer select-none"
         >
           {flipped ? (
             <>
-              <div className="text-2xl text-secondary/80 mb-2">{current.bangla}</div>
-              <div className="text-lg text-secondary/60">{current.romaji || current.meaning}</div>
+              <div className="text-xl sm:text-2xl text-text-main mb-2 font-semibold">{current.bangla}</div>
+              <div className="text-base sm:text-lg text-text-muted">{current.romaji || current.meaning}</div>
               {current.example && (
-                <div className="mt-4 text-sm text-secondary/50">
-                  <p>{current.example}</p>
-                  {current.meaning && <p>{current.meaning}</p>}
+                <div className="mt-4 text-sm text-text-muted/70">
+                  <p className="text-base text-text-main">{current.example}</p>
+                  {current.meaning && <p className="mt-1">{current.meaning}</p>}
                 </div>
               )}
             </>
           ) : (
-            <div className="text-8xl">{current.char}</div>
+            <div className="text-7xl sm:text-8xl">{current.char}</div>
           )}
         </div>
 
-        <div className="flex justify-center gap-4 mt-6">
+        <div className="flex justify-center gap-3 mt-6">
           <button
             onClick={() => { setIndex(prev => Math.max(0, prev - 1)); setFlipped(false) }}
             disabled={index === 0}
-            className="bg-white/10 text-secondary px-6 py-3 rounded-xl hover:bg-white/20 transition disabled:opacity-30"
+            className="btn-ghost disabled:opacity-30 disabled:cursor-not-allowed"
           >
             ← পূর্ববর্তী
           </button>
           <button
             onClick={() => speak(current.char)}
-            className="bg-primary text-secondary px-4 py-3 rounded-xl hover:bg-primary/80 transition"
+            className="btn-primary px-4"
+            aria-label="Speak"
           >
             🔊
           </button>
           <button
             onClick={() => { setIndex(prev => Math.min(data.length - 1, prev + 1)); setFlipped(false) }}
             disabled={index === data.length - 1}
-            className="bg-white/10 text-secondary px-6 py-3 rounded-xl hover:bg-white/20 transition disabled:opacity-30"
+            className="btn-ghost disabled:opacity-30 disabled:cursor-not-allowed"
           >
             পরবর্তী →
           </button>
         </div>
 
-        <div className="text-center mt-4 text-secondary/60">
+        <div className="text-center mt-4 text-text-muted text-sm">
           {index + 1} / {data.length}
         </div>
       </div>

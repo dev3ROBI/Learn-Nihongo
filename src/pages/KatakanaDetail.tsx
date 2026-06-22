@@ -18,7 +18,7 @@ export default function KatakanaDetail() {
   if (!item) {
     return (
       <div className="text-center py-12">
-        <p className="text-secondary/60">লোড হচ্ছে...</p>
+        <p className="text-text-muted">লোড হচ্ছে...</p>
         <Link to="/katakana" className="text-primary block mt-4 hover:underline">← কাটাকানা লিস্টে ফিরুন</Link>
       </div>
     )
@@ -26,24 +26,26 @@ export default function KatakanaDetail() {
 
   return (
     <div className="max-w-lg mx-auto text-center">
-      <Link to="/katakana" className="text-primary hover:underline block mb-6 text-left">← কাটাকানা লিস্ট</Link>
+      <Link to="/katakana" className="text-primary hover:underline inline-block mb-6 text-sm">
+        ← কাটাকানা লিস্ট
+      </Link>
 
-      <div className="bg-white/10 backdrop-blur rounded-2xl p-8 mb-6">
-        <div className="text-8xl mb-4">{item.char}</div>
-        <div className="text-2xl text-secondary/80 mb-2">{item.romaji}</div>
-        <div className="text-xl text-primary font-semibold mb-4">বাংলা: {item.bangla}</div>
+      <div className="card p-6 sm:p-8 mb-6">
+        <div className="text-7xl sm:text-8xl mb-4">{item.char}</div>
+        <div className="text-xl sm:text-2xl text-text-muted mb-2">{item.romaji}</div>
+        <div className="text-lg sm:text-xl text-primary font-semibold mb-4">বাংলা: {item.bangla}</div>
 
         {item.example && (
-          <div className="bg-accent/50 rounded-xl p-4 mb-4">
-            <p className="text-sm text-secondary/60">উদাহরণ</p>
+          <div className="bg-surface-alt rounded-xl p-4 mb-4">
+            <p className="text-xs text-text-muted uppercase tracking-wide mb-1">উদাহরণ</p>
             <p className="text-xl">{item.example}</p>
-            <p className="text-secondary/70">{item.meaning}</p>
+            <p className="text-text-muted text-sm">{item.meaning}</p>
           </div>
         )}
 
         <button
           onClick={() => speak(item.char)}
-          className="bg-primary text-secondary px-6 py-3 rounded-xl text-lg font-semibold hover:bg-primary/80 transition"
+          className="btn-primary"
         >
           🔊 উচ্চারণ শুনুন
         </button>

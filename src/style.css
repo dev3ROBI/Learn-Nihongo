@@ -1,12 +1,63 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #E53935;
-  --color-secondary: #FFFFFF;
-  --color-accent: #111827;
+  --color-primary: #DC2626;
+  --color-primary-hover: #B91C1C;
+  --color-primary-light: #FEE2E2;
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-bg-page: var(--bg-page);
+  --color-success: #16A34A;
+  --color-success-bg: #DCFCE7;
+  --color-error: #DC2626;
+  --color-error-bg: #FEE2E2;
+  --font-sans: 'Inter', 'Noto Sans Bengali', 'Noto Sans JP', sans-serif;
+}
+
+:root,
+.light {
+  --surface: #FFFFFF;
+  --surface-hover: #F3F4F6;
+  --surface-alt: #E5E7EB;
+  --border: #D1D5DB;
+  --text-main: #111827;
+  --text-muted: #6B7280;
+  --bg-page: #F9FAFB;
+  color-scheme: light;
+}
+
+.dark {
+  --surface: #1E293B;
+  --surface-hover: #334155;
+  --surface-alt: #475569;
+  --border: #475569;
+  --text-main: #F1F5F9;
+  --text-muted: #94A3B8;
+  --bg-page: #0F172A;
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-accent text-secondary min-h-screen;
-  font-family: 'Noto Sans Bengali', 'Noto Sans JP', sans-serif;
+  @apply bg-bg-page text-text-main min-h-screen antialiased;
+  font-family: 'Inter', 'Noto Sans Bengali', 'Noto Sans JP', sans-serif;
+}
+
+.card {
+  @apply bg-surface border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-hover transition duration-200 shadow-sm hover:shadow-md active:scale-[0.98];
+}
+
+.btn-ghost {
+  @apply bg-surface hover:bg-surface-hover text-text-main border border-border rounded-xl px-4 py-2 transition duration-200;
+}
+
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl bg-surface border border-border text-text-main placeholder-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition duration-200;
 }
