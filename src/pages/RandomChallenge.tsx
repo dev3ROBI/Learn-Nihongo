@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import type { QuizItem, IKanji, IHiragana, IKatakana } from '../types'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { shuffleArray, getRandomItems, getOptions } from '../utils/gameHelpers'
+import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
 
 export default function RandomChallenge() {
   const [questions, setQuestions] = useState<any[]>([])
@@ -37,15 +38,20 @@ export default function RandomChallenge() {
 
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
+    playClick()
     setSelected(answer)
     if (answer === questions[currentIndex].correct) {
+      playCorrect()
       setScore(prev => prev + 1)
+    } else {
+      playWrong()
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex(prev => prev + 1)
         setSelected(null)
       } else {
+        playComplete()
         setFinished(true)
       }
     }, 800)
@@ -54,11 +60,13 @@ export default function RandomChallenge() {
   if (!started) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">🎲</div>
+        <div className="text-6xl mb-4">
+          <i className="fa-solid fa-dice text-primary" />
+        </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-4">র‌্যান্ডম চ্যালেঞ্জ</h1>
-        <p className="text-text-muted mb-6">হিরাগানা, কাটাকানা ও কানজি মিক্সড ১০টি প্রশ্ন!</p>
+        <p className="text-text-muted mb-6 text-sm">হিরাগানা, কাটাকানা ও কানজি মিক্সড ১০টি প্রশ্ন!</p>
         <button onClick={generate} className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4">
-          শুরু করুন!
+          <i className="fa-solid fa-play mr-2" />শুরু করুন!
         </button>
       </div>
     )
@@ -70,10 +78,12 @@ export default function RandomChallenge() {
       <div className="text-center py-12">
         <div className="text-6xl mb-4">🏆</div>
         <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">চ্যালেঞ্জ শেষ!</h2>
-        <p className="text-lg sm:text-xl text-text-muted mb-2">স্কোর: {score} / {questions.length}</p>
+        <p className="text-lg sm:text-xl text-text-muted mb-2">
+          <i className="fa-solid fa-star text-primary mr-2" />স্কোর: {score} / {questions.length}
+        </p>
         <p className="text-primary font-semibold mb-6">{pct}% সঠিক</p>
         <button onClick={generate} className="btn-primary">
-          আবার খেলুন
+          <i className="fa-solid fa-rotate mr-2" />আবার খেলুন
         </button>
       </div>
     )
@@ -84,7 +94,9 @@ export default function RandomChallenge() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-2 text-text-muted text-sm">
-        প্রশ্ন {currentIndex + 1} / {questions.length} | স্কোর: {score}
+        <i className="fa-solid fa-circle text-[6px] text-primary mr-1 align-middle" /> প্রশ্ন {currentIndex + 1} / {questions.length}
+        <span className="mx-2">|</span>
+        <i className="fa-solid fa-star text-[10px] text-primary mr-1 align-middle" /> স্কোর: {score}
       </div>
       <div className="card p-6 sm:p-8 mb-6 text-center">
         <div className="text-6xl sm:text-7xl mb-4">{q.question}</div>

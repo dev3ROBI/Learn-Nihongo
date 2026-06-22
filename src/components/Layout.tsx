@@ -2,11 +2,11 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useTheme } from './ThemeProvider'
 
 const bottomNavItems = [
-  { to: '/', label: 'হোম', icon: '🏠' },
-  { to: '/hiragana', label: 'শেখা', icon: '📖' },
-  { to: '/quiz', label: 'কুইজ', icon: '🎯' },
-  { to: '/flashcard', label: 'কার্ড', icon: '🃏' },
-  { to: '/about', label: 'সম্পর্কে', icon: 'ℹ️' },
+  { to: '/', label: 'হোম', icon: 'fa-solid fa-house' },
+  { to: '/hiragana', label: 'শেখা', icon: 'fa-solid fa-book-open' },
+  { to: '/quiz', label: 'কুইজ', icon: 'fa-solid fa-question' },
+  { to: '/flashcard', label: 'কার্ড', icon: 'fa-solid fa-layer-group' },
+  { to: '/about', label: 'সম্পর্কে', icon: 'fa-solid fa-circle-info' },
 ]
 
 const desktopLinks = [
@@ -58,7 +58,7 @@ export default function Layout() {
               className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-lg"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? '☀️' : '🌙'}
+              <i className={`${theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'}`} />
             </button>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function Layout() {
                   isActive ? 'text-primary' : 'text-text-muted'
                 }`}
               >
-                <span className="text-xl leading-none">{item.icon}</span>
+                <i className={`${item.icon} text-lg leading-none ${isActive ? 'text-primary' : ''}`} />
                 <span className="text-[10px] mt-0.5 truncate w-full text-center font-medium">
                   {item.label}
                 </span>

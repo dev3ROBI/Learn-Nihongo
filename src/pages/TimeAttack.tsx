@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { getRandomItems, getOptions } from '../utils/gameHelpers'
+import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
 
 type Category = 'hiragana' | 'katakana' | 'kanji'
 
@@ -48,9 +49,13 @@ export default function TimeAttack() {
 
   const handleAnswer = (answer: string) => {
     if (selected !== null || gameState !== 'playing') return
+    playClick()
     setSelected(answer)
     if (answer === questions[currentIndex].correct) {
+      playCorrect()
       setScore(prev => prev + 1)
+    } else {
+      playWrong()
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -65,9 +70,11 @@ export default function TimeAttack() {
   if (gameState === 'idle') {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">⏱️</div>
+        <div className="text-6xl mb-4">
+          <i className="fa-solid fa-stopwatch text-primary" />
+        </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-4">টাইম অ্যাটাক</h1>
-        <p className="text-text-muted mb-6">৩০ সেকেন্ডের মধ্যে সর্বোচ্চ প্রশ্নের উত্তর দিন!</p>
+        <p className="text-text-muted mb-6 text-sm">৩০ সেকেন্ডের মধ্যে সর্বোচ্চ প্রশ্নের উত্তর দিন!</p>
         <div className="flex flex-wrap gap-2 justify-center mb-6">
           {(['hiragana', 'katakana', 'kanji'] as Category[]).map(c => (
             <button
@@ -84,7 +91,7 @@ export default function TimeAttack() {
           ))}
         </div>
         <button onClick={startGame} className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4">
-          শুরু করুন!
+          <i className="fa-solid fa-play mr-2" />শুরু করুন!
         </button>
       </div>
     )
@@ -96,10 +103,10 @@ export default function TimeAttack() {
         <div className="text-6xl mb-4">⏰</div>
         <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">সময় শেষ!</h2>
         <p className="text-lg sm:text-xl text-text-muted mb-2">
-          আপনার স্কোর: {score} / {currentIndex + (selected !== null ? 1 : 0)}
+          <i className="fa-solid fa-star text-primary mr-2" />আপনার স্কোর: {score} / {currentIndex + (selected !== null ? 1 : 0)}
         </p>
         <button onClick={startGame} className="btn-primary mt-4">
-          আবার খেলুন
+          <i className="fa-solid fa-rotate mr-2" />আবার খেলুন
         </button>
       </div>
     )
@@ -112,7 +119,9 @@ export default function TimeAttack() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-4">
-        <div className="text-3xl sm:text-4xl font-bold text-primary">{timeLeft}s</div>
+        <div className="text-3xl sm:text-4xl font-bold text-primary">
+          <i className="fa-solid fa-clock mr-2" />{timeLeft}s
+        </div>
         <div className="w-full bg-surface-alt rounded-full h-2 sm:h-3 mt-2">
           <div
             className="bg-primary h-full rounded-full transition-all duration-1000"
@@ -122,7 +131,9 @@ export default function TimeAttack() {
       </div>
 
       <div className="text-center mb-2 text-text-muted text-sm">
-        স্কোর: {score} | প্রশ্ন: {currentIndex + 1}/{questions.length}
+        <i className="fa-solid fa-star text-[10px] text-primary mr-1 align-middle" /> স্কোর: {score}
+        <span className="mx-2">|</span>
+        প্রশ্ন: {currentIndex + 1}/{questions.length}
       </div>
 
       <div className="card p-6 sm:p-8 mb-6 text-center">

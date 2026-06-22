@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { IHiragana, IKatakana, IKanji, QuizItem } from '../types'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { getRandomItems, getOptions } from '../utils/gameHelpers'
+import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
 
 type Tab = 'hiragana' | 'katakana' | 'kanji' | 'kanji-reverse'
 
@@ -73,15 +74,20 @@ export default function Quiz() {
 
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
+    playClick()
     setSelected(answer)
     if (answer === questions[currentIndex].correct) {
+      playCorrect()
       setScore(prev => prev + 1)
+    } else {
+      playWrong()
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex(prev => prev + 1)
         setSelected(null)
       } else {
+        playComplete()
         setFinished(true)
       }
     }, 800)
@@ -97,10 +103,12 @@ export default function Quiz() {
       <div className="text-center py-12">
         <div className="text-6xl mb-4">{percentage >= 80 ? '🎉' : percentage >= 50 ? '👍' : '💪'}</div>
         <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">কুইজ শেষ!</h2>
-        <p className="text-lg sm:text-xl text-text-muted mb-2">আপনার স্কোর: {score} / {questions.length}</p>
+        <p className="text-lg sm:text-xl text-text-muted mb-2">
+          <i className="fa-solid fa-star text-primary mr-2" />আপনার স্কোর: {score} / {questions.length}
+        </p>
         <p className="text-primary font-semibold mb-6">{percentage}% সঠিক</p>
         <button onClick={generateQuestions} className="btn-primary">
-          আবার খেলুন
+          <i className="fa-solid fa-rotate mr-2" />আবার খেলুন
         </button>
       </div>
     )
@@ -110,7 +118,9 @@ export default function Quiz() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-6">কুইজ 🎯</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-6">
+        <i className="fa-solid fa-question-circle text-primary mr-2" />কুইজ
+      </h1>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {tabs.map(tab => (
@@ -129,7 +139,9 @@ export default function Quiz() {
       </div>
 
       <div className="text-center mb-2 text-text-muted text-sm">
-        প্রশ্ন {currentIndex + 1} / {questions.length} | স্কোর: {score}
+        <i className="fa-solid fa-circle text-[6px] text-primary mr-1 align-middle" /> প্রশ্ন {currentIndex + 1} / {questions.length}
+        <span className="mx-2">|</span>
+        <i className="fa-solid fa-star text-[10px] text-primary mr-1 align-middle" /> স্কোর: {score}
       </div>
 
       <div className="card p-6 sm:p-8 mb-6 text-center max-w-lg mx-auto">
