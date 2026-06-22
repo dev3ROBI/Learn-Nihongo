@@ -1,4 +1,4 @@
-import type { QuizItem } from '../types'
+import type { QuizItem, IKanji } from '../types'
 
 export function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array]
@@ -25,4 +25,23 @@ export function getOptions(
     .map(item => String(item[key]))
 
   return shuffleArray([correctAnswer, ...wrong])
+}
+
+export function getKanjiReading(
+  item: IKanji
+): string {
+  return item.kunReading || item.onReading
+}
+
+export function getKanjiReadingOptions(
+  correctReading: string,
+  allKanji: IKanji[]
+): string[] {
+  const wrong = shuffleArray(
+    allKanji.filter(item => getKanjiReading(item) !== correctReading)
+  )
+    .slice(0, 3)
+    .map(item => getKanjiReading(item))
+
+  return shuffleArray([correctReading, ...wrong])
 }
