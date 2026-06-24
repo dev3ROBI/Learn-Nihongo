@@ -21,6 +21,8 @@ export default function WritingPractice() {
   const [strokeCount, setStrokeCount] = useState(0)
   const [undoStack, setUndoStack] = useState<ImageData[]>([])
   const [showGuide, setShowGuide] = useState(true)
+  const [score, setScore] = useState<number | null>(null)
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -37,6 +39,7 @@ export default function WritingPractice() {
     setCurrent(items[idx])
     setStrokeCount(0)
     setUndoStack([])
+    setScore(null)
   }
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function WritingPractice() {
     ctx.strokeStyle = '#DC2626'
     ctx.lineWidth = 4
     drawGrid(ctx, canvas.offsetWidth, canvas.offsetHeight)
+    setScore(null)
   }, [current])
 
   function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -125,9 +129,71 @@ export default function WritingPractice() {
     drawGrid(ctx, canvas.offsetWidth, canvas.offsetHeight)
     setUndoStack([])
     setStrokeCount(0)
+    setScore(null)
+  }
+
+  function checkDrawing() {
+    const canvas = canvasRef.current
+    if (!canvas || !current) return
+    setChecking(true)
+
+    const w = canvas.offsetWidth
+    const h = canvas.offsetHeight
+    const refCanvas = document.createElement('canvas')
+    refCanvas.width = w * 2
+    refCanvas.height = h * 2
+    const refCtx = refCanvas.getContext('2d')
+    if (!refCtx) { setChecking(false); return }
+    refCtx.scale(2, 2)
+    refCtx.fillStyle = '#FFFFFF'
+    refCtx.fillRect(0, 0, w, h)
+    const fontSize = Math.min(w, h) * 0.65
+    refCtx.fillStyle = '#000000'
+    refCtx.font = `${fontSize}px "Noto Sans JP", "Inter", sans-serif`
+    refCtx.textAlign = 'center'
+    refCtx.textBaseline = 'middle'
+    refCtx.fillText(current.char, w / 2, h / 2 + 2)
+
+    const userData = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+    const refData = refCtx.getImageData(0, 0, refCanvas.width, refCanvas.height).data
+
+    let userPixels = 0
+    let refPixels = 0
+    let matchPixels = 0
+
+    for (let i = 0; i < userData.length; i += 4) {
+      const userBright = (userData[i] + userData[i + 1] + userData[i + 2]) / 3
+      const refBright = (refData[i] + refData[i + 1] + refData[i + 2]) / 3
+      const isUserDark = userBright < 128
+      const isRefDark = refBright < 128
+
+      if (isUserDark) userPixels++
+      if (isRefDark) refPixels++
+      if (isUserDark && isRefDark) matchPixels++
+    }
+
+    refCanvas.remove()
+    const union = userPixels + refPixels - matchPixels
+    const pct = union > 0 ? Math.round((matchPixels / union) * 100) : 0
+    setScore(Math.min(100, Math.max(0, pct)))
+    setChecking(false)
   }
 
   function nextChar() { pickRandom(data) }
+
+  function getScoreColor(s: number): string {
+    if (s >= 80) return 'text-success'
+    if (s >= 60) return 'text-primary'
+    if (s >= 40) return 'text-yellow-500'
+    return 'text-error'
+  }
+
+  function getScoreLabel(s: number): string {
+    if (s >= 80) return 'চমৎকার! 🎉'
+    if (s >= 60) return 'ভালো! 👍'
+    if (s >= 40) return 'চলতে থাকে 💪'
+    return 'আরও প্র্যাকটিস করুন 📝'
+  }
 
   if (loading) return <Loader text="লোড হচ্ছে..." />
   if (!current) return <div className="text-center text-text-muted py-12">কোনো ডেটা নেই</div>
@@ -188,17 +254,39 @@ export default function WritingPractice() {
         )}
       </div>
 
-      <div className="flex gap-2 justify-center mb-4">
+      <div className="flex gap-2 justify-center mb-3">
         <button onClick={undo} className="btn-ghost text-sm" disabled={undoStack.length === 0}>
           <i className="fa-solid fa-rotate-left mr-1" />আনডু
         </button>
         <button onClick={clearCanvas} className="btn-ghost text-sm">
           <i className="fa-solid fa-eraser mr-1" />মুছুন
         </button>
-        <button onClick={nextChar} className="btn-primary text-sm">
+        <button onClick={checkDrawing} disabled={checking || strokeCount === 0} className="btn-primary text-sm disabled:opacity-40">
+          <i className="fa-solid fa-check mr-1" />{checking ? 'চেক হচ্ছে...' : 'চেক করুন'}
+        </button>
+        <button onClick={nextChar} className="btn-ghost text-sm">
           <i className="fa-solid fa-arrow-right mr-1" />পরবর্তী
         </button>
       </div>
+
+      {score !== null && (
+        <div className="animate-pop text-center mb-3">
+          <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-2xl border-2 backdrop-blur-sm ${
+            score >= 80
+              ? 'bg-success-bg/80 border-success/30'
+              : score >= 60
+              ? 'bg-primary/10 border-primary/20'
+              : score >= 40
+              ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400/30'
+              : 'bg-error-bg/80 border-error/30'
+          }`}>
+            <div className="text-center">
+              <div className={`text-2xl font-extrabold ${getScoreColor(score)}`}>{score}%</div>
+              <div className={`text-xs font-medium mt-0.5 ${getScoreColor(score)}`}>{getScoreLabel(score)}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="text-center text-xs text-text-muted">
         <i className="fa-solid fa-paintbrush mr-1" />স্ট্রোক: {strokeCount}
