@@ -1,10 +1,26 @@
 import type { IHiragana, IKatakana, IKanji } from '../types'
 
+const cache = new Map<string, any[]>()
+
+async function loadJSON<T>(path: string): Promise<T[]> {
+  if (cache.has(path)) return cache.get(path) as T[]
+  try {
+    const res = await fetch(path)
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${path}`)
+    const data: T[] = await res.json()
+    cache.set(path, data)
+    return data
+  } catch (err) {
+    console.error(`Failed to load ${path}:`, err)
+    return []
+  }
+}
+
 export const loadHiragana = (): Promise<IHiragana[]> =>
-  fetch('/data/hiragana.json').then(res => res.json())
+  loadJSON<IHiragana>('/data/hiragana.json')
 
 export const loadKatakana = (): Promise<IKatakana[]> =>
-  fetch('/data/katakana.json').then(res => res.json())
+  loadJSON<IKatakana>('/data/katakana.json')
 
 export const loadKanji = (): Promise<IKanji[]> =>
-  fetch('/data/kanji.json').then(res => res.json())
+  loadJSON<IKanji>('/data/kanji.json')

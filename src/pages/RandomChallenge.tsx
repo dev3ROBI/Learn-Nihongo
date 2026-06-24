@@ -49,25 +49,31 @@ export default function RandomChallenge() {
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
     playClick()
+    const q = questions[currentIndex]
+    const isCorrect = answer === q.correct
+    const newScore = score + (isCorrect ? 1 : 0)
+    const newMistake = isCorrect ? null : {
+      question: q.question,
+      correctAnswer: q.correct,
+      userAnswer: answer,
+      category: 'random',
+      date: new Date().toISOString(),
+    }
+    const newMistakes = newMistake ? [...mistakes, newMistake] : mistakes
+
     setSelected(answer)
-    if (answer === questions[currentIndex].correct) {
+    if (isCorrect) {
       playCorrect()
-      setScore(prev => prev + 1)
+      setScore(newScore)
       setStreak(prev => {
         const n = prev + 1
         if (n > bestStreak) setBestStreak(n)
         return n
       })
     } else {
-      playWrong();
+      playWrong()
       setStreak(0)
-      setMistakes(prev => [...prev, {
-        question: q.question,
-        correctAnswer: q.correct,
-        userAnswer: answer,
-        category: 'random',
-        date: new Date().toISOString(),
-      }])
+      setMistakes(newMistakes as any)
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -78,9 +84,9 @@ export default function RandomChallenge() {
         const result = saveQuizResult({
           type: 'random',
           category: 'random-challenge',
-          score: score + (q.correct === q.correct ? 1 : 0),
+          score: newScore,
           total: questions.length,
-          mistakes: mistakes,
+          mistakes: newMistakes,
         })
         if (result.newBadges.length > 0) setNewBadges(result.newBadges.map(b => b.name))
         setFinished(true)

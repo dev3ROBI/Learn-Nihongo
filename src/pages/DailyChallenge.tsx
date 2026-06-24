@@ -56,21 +56,25 @@ export default function DailyChallenge() {
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
     playClick()
-    setSelected(answer)
     const q = questions[currentIndex]
     const isCorrect = answer === q.correct
+    const newScore = score + (isCorrect ? 1 : 0)
+    const newMistake = isCorrect ? null : {
+      question: q.question,
+      correctAnswer: q.correct,
+      userAnswer: answer,
+      category: q.category,
+      date: new Date().toISOString(),
+    }
+    const newMistakes = newMistake ? [...mistakes, newMistake] : mistakes
+
+    setSelected(answer)
     if (isCorrect) {
       playCorrect()
-      setScore(prev => prev + 1)
+      setScore(newScore)
     } else {
       playWrong()
-      setMistakes(prev => [...prev, {
-        question: q.question,
-        correctAnswer: q.correct,
-        userAnswer: answer,
-        category: q.category,
-        date: new Date().toISOString(),
-      }])
+      setMistakes(newMistakes as any)
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -81,9 +85,9 @@ export default function DailyChallenge() {
         const result = saveQuizResult({
           type: 'daily',
           category: 'daily-challenge',
-          score: score + (isCorrect ? 1 : 0),
+          score: newScore,
           total: questions.length,
-          mistakes: mistakes,
+          mistakes: newMistakes,
         })
         if (result.newBadges.length > 0) {
           setNewBadges(result.newBadges.map(b => b.name))

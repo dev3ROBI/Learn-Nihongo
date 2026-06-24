@@ -35,6 +35,14 @@ export default function CustomQuiz() {
     setSelection(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const selectAll = () => {
+    setSelection({ hiragana: true, katakana: true, kanji: true, kanjiReverse: true, kanjiHiragana: true, hiraganaKanji: true })
+  }
+
+  const deselectAll = () => {
+    setSelection({ hiragana: false, katakana: false, kanji: false, kanjiReverse: false, kanjiHiragana: false, hiraganaKanji: false })
+  }
+
   const generate = useCallback(async () => {
     const [h, k, kj] = await Promise.all([loadHiragana(), loadKatakana(), loadKanji()])
     const mixed: QuizItem[] = []
@@ -93,21 +101,25 @@ export default function CustomQuiz() {
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
     playClick()
-    setSelected(answer)
     const q = questions[currentIndex]
     const isCorrect = answer === q.correct
+    const newScore = score + (isCorrect ? 1 : 0)
+    const newMistake = isCorrect ? null : {
+      question: q.question,
+      correctAnswer: q.correct,
+      userAnswer: answer,
+      category: q.category || 'কাস্টম',
+      date: new Date().toISOString(),
+    }
+    const newMistakes = newMistake ? [...mistakes, newMistake] : mistakes
+
+    setSelected(answer)
     if (isCorrect) {
       playCorrect()
-      setScore(prev => prev + 1)
+      setScore(newScore)
     } else {
       playWrong()
-      setMistakes(prev => [...prev, {
-        question: q.question,
-        correctAnswer: q.correct,
-        userAnswer: answer,
-        category: q.category || 'কাস্টম',
-        date: new Date().toISOString(),
-      }])
+      setMistakes(newMistakes as any)
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -118,9 +130,9 @@ export default function CustomQuiz() {
         saveQuizResult({
           type: 'quiz',
           category: 'custom',
-          score: score + (isCorrect ? 1 : 0),
+          score: newScore,
           total: questions.length,
-          mistakes: mistakes,
+          mistakes: newMistakes,
         })
         setFinished(true)
       }
@@ -135,7 +147,13 @@ export default function CustomQuiz() {
         </h1>
 
         <div className="card p-5 mb-6">
-          <h2 className="font-semibold text-text-main mb-3">ক্যাটাগরি নির্বাচন</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-text-main">ক্যাটাগরি নির্বাচন</h2>
+            <div className="flex gap-1">
+              <button onClick={selectAll} className="text-xs text-primary hover:bg-primary/10 px-2 py-1 rounded-lg transition">সব</button>
+              <button onClick={deselectAll} className="text-xs text-text-muted hover:bg-surface-hover px-2 py-1 rounded-lg transition">ক্লিয়ার</button>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {(Object.keys(defaults) as (keyof Selection)[]).map(key => (
               <button key={key} onClick={() => toggle(key)}

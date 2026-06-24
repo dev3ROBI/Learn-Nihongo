@@ -117,11 +117,22 @@ export default function Quiz() {
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
     playClick()
+    const q = questions[currentIndex]
+    const isCorrect = answer === q.correct
+    const newScore = score + (isCorrect ? 1 : 0)
+    const newMistake = isCorrect ? null : {
+      question: q.question,
+      correctAnswer: q.correct,
+      userAnswer: answer,
+      category: activeTab,
+      date: new Date().toISOString(),
+    }
+    const newMistakes = newMistake ? [...mistakes, newMistake] : mistakes
+
     setSelected(answer)
-    const isCorrect = answer === questions[currentIndex].correct
     if (isCorrect) {
       playCorrect()
-      setScore(prev => prev + 1)
+      setScore(newScore)
       setStreak(prev => {
         const n = prev + 1
         if (n > bestStreak) setBestStreak(n)
@@ -130,13 +141,7 @@ export default function Quiz() {
     } else {
       playWrong()
       setStreak(0)
-      setMistakes(prev => [...prev, {
-        question: q.question,
-        correctAnswer: q.correct,
-        userAnswer: answer,
-        category: activeTab,
-        date: new Date().toISOString(),
-      }])
+      setMistakes(newMistakes as any)
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -147,15 +152,27 @@ export default function Quiz() {
         const result = saveQuizResult({
           type: 'quiz',
           category: activeTab,
-          score: score + (answer === q.correct ? 1 : 0),
+          score: newScore,
           total: questions.length,
-          mistakes: mistakes,
+          mistakes: newMistakes,
         })
         if (result.newBadges.length > 0) setNewBadges(result.newBadges.map(b => b.name))
         setFinished(true)
       }
     }, 800)
   }
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const num = parseInt(e.key)
+      const opts = questions[currentIndex]?.options
+      if (num >= 1 && num <= 4 && opts?.[num - 1] && !finished && selected === null) {
+        handleAnswer(opts[num - 1])
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  })
 
   if (questions.length === 0) {
     return <div className="text-center text-text-muted py-12">লোড হচ্ছে...</div>
@@ -207,20 +224,22 @@ export default function Quiz() {
         <i className="fa-solid fa-circle-question text-primary mr-2" />কুইজ
       </h1>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-              activeTab === tab.key
-                ? 'bg-primary text-white shadow-md scale-105'
-                : 'bg-surface text-text-muted hover:bg-surface-hover border border-border'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-3 sm:-mx-0 mb-4 scrollbar-none">
+        <div className="flex gap-2 px-3 sm:px-0 min-w-max">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.key
+                  ? 'bg-primary text-white shadow-md scale-105'
+                  : 'bg-surface text-text-muted hover:bg-surface-hover border border-border'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="w-full bg-surface-alt rounded-full h-1.5 mb-4">

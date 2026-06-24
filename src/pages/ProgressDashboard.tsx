@@ -138,7 +138,7 @@ export default function ProgressDashboard() {
       {showClear && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-modal-backdrop"
-          style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
           onClick={() => setShowClear(false)}
         >
           <div

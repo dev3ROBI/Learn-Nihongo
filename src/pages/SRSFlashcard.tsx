@@ -58,9 +58,7 @@ export default function SRSFlashcard() {
     if (data.length > 0) buildQueue()
   }, [data, buildQueue])
 
-  useEffect(() => {
-    refreshCounts()
-  }, [mode, refreshCounts])
+  useEffect(() => { refreshCounts() }, [mode, refreshCounts])
 
   const handleRating = useCallback((correct: boolean) => {
     playClick()

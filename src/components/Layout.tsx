@@ -1,5 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useTheme } from './ThemeProvider'
+import { isMuted, toggleMute } from '../utils/sound'
+import { useState, useEffect } from 'react'
 
 const bottomNavItems = [
   { to: '/', label: 'হোম', icon: 'fa-solid fa-house' },
@@ -31,6 +33,31 @@ const desktopLinks = [
 export default function Layout() {
   const location = useLocation()
   const { theme, toggle } = useTheme()
+  const [soundOn, setSoundOn] = useState(!isMuted())
+
+  const pageTitles: Record<string, string> = {
+    '/': 'হোম',
+    '/hiragana': 'হিরাগানা',
+    '/katakana': 'কাটাকানা',
+    '/kanji': 'কানজি',
+    '/quiz': 'কুইজ',
+    '/flashcard': 'ফ্ল্যাশকার্ড',
+    '/matching': 'ম্যাচিং',
+    '/timeattack': 'টাইম অ্যাটাক',
+    '/random': 'র‌্যান্ডম চ্যালেঞ্জ',
+    '/daily': 'ডেইলি চ্যালেঞ্জ',
+    '/custom-quiz': 'কাস্টম কুইজ',
+    '/srs': 'SRS কার্ড',
+    '/mistakes': 'ভুল পর্যালোচনা',
+    '/writing': 'লেখা প্র্যাকটিস',
+    '/progress': 'প্রোগ্রেস',
+    '/about': 'সম্পর্কে',
+  }
+
+  useEffect(() => {
+    const base = pageTitles[location.pathname] || ''
+    document.title = base ? `${base} — Learn Nihongo` : 'Learn Nihongo'
+  }, [location.pathname])
 
   return (
     <div className="min-h-screen bg-bg-page flex flex-col">
@@ -59,6 +86,13 @@ export default function Layout() {
               ))}
             </nav>
 
+            <button
+              onClick={() => { toggleMute(); setSoundOn(!soundOn) }}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-base"
+              aria-label={soundOn ? 'Sound on' : 'Sound off'}
+            >
+              <i className={`${soundOn ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark'}`} />
+            </button>
             <button
               onClick={toggle}
               className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-lg"

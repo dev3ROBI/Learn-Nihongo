@@ -1,4 +1,12 @@
 let audioCtx: AudioContext | null = null
+let muted = localStorage.getItem('sound_muted') === 'true'
+
+export function isMuted() { return muted }
+
+export function toggleMute() {
+  muted = !muted
+  localStorage.setItem('sound_muted', String(muted))
+}
 
 function getCtx() {
   if (!audioCtx) audioCtx = new AudioContext()
@@ -6,6 +14,7 @@ function getCtx() {
 }
 
 export function playCorrect() {
+  if (muted) return
   const ctx = getCtx()
   const o = ctx.createOscillator()
   const g = ctx.createGain()
@@ -22,6 +31,7 @@ export function playCorrect() {
 }
 
 export function playWrong() {
+  if (muted) return
   const ctx = getCtx()
   const o = ctx.createOscillator()
   const g = ctx.createGain()
@@ -37,6 +47,7 @@ export function playWrong() {
 }
 
 export function playClick() {
+  if (muted) return
   const ctx = getCtx()
   const o = ctx.createOscillator()
   const g = ctx.createGain()
@@ -51,6 +62,7 @@ export function playClick() {
 }
 
 export function playComplete() {
+  if (muted) return
   const ctx = getCtx()
   const notes = [523, 659, 784, 1047]
   notes.forEach((freq, i) => {
