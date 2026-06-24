@@ -131,21 +131,43 @@ export default function ProgressDashboard() {
         </div>
       </div>
 
-      <button onClick={() => setShowClear(true)} className="text-text-muted text-xs hover:text-error transition w-full text-center py-2">
-        <i className="fa-solid fa-trash-can mr-1" />সব ডাটা মুছুন
+      <button onClick={() => setShowClear(true)} className="text-text-muted/50 text-xs hover:text-error transition w-full text-center py-3 group">
+        <i className="fa-solid fa-trash-can mr-1 group-hover:scale-110 transition-transform inline-block" />সব ডাটা মুছুন
       </button>
 
       {showClear && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowClear(false)}>
-          <div className="card p-6 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
-            <i className="fa-solid fa-triangle-exclamation text-4xl text-error mb-4" />
-            <h3 className="font-bold text-text-main mb-2">নিশ্চিত?</h3>
-            <p className="text-text-muted text-sm mb-6">সব প্রোগ্রেস ডাটা মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।</p>
-            <div className="flex gap-3 justify-center">
-              <button onClick={() => setShowClear(false)} className="btn-ghost">বাতিল</button>
-              <button onClick={() => { clearProgress(); setShowClear(false); window.location.reload() }} className="bg-error text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-red-700 transition">
-                <i className="fa-solid fa-trash-can mr-1" />মুছুন
-              </button>
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-modal-backdrop"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          onClick={() => setShowClear(false)}
+        >
+          <div
+            className="animate-modal w-full max-w-sm"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-surface rounded-2xl border border-border shadow-2xl p-6 sm:p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-error-bg flex items-center justify-center mx-auto mb-4">
+                <i className="fa-solid fa-trash-can text-xl text-error" />
+              </div>
+              <h3 className="text-lg font-bold text-text-main mb-2">ডাটা মুছবেন?</h3>
+              <p className="text-text-muted text-sm leading-relaxed mb-6">
+                আপনার সব প্রোগ্রেস, স্কোর, ব্যাজ ও স্ট্রিক স্থায়ীভাবে মুছে যাবে।<br />
+                <span className="text-error font-medium">এই কাজটি ফিরিয়ে আনা যাবে না।</span>
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { clearProgress(); setShowClear(false); window.location.reload() }}
+                  className="w-full bg-error text-white rounded-xl py-3 font-semibold hover:bg-red-700 transition active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <i className="fa-solid fa-trash-can" />হ্যাঁ, সব মুছুন
+                </button>
+                <button
+                  onClick={() => setShowClear(false)}
+                  className="w-full bg-surface-alt text-text-main rounded-xl py-3 font-medium hover:bg-surface-hover transition active:scale-[0.98]"
+                >
+                  বাতিল করুন
+                </button>
+              </div>
             </div>
           </div>
         </div>

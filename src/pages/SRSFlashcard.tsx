@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { IHiragana, IKatakana, IKanji, QuizItem } from '../types'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { speak } from '../utils/speak'
-import { playClick, playCorrect, playWrong } from '../utils/sound'
+import { playClick, playCorrect, playWrong, playComplete } from '../utils/sound'
 import { getDueSRSItems, updateSRSItem, getSRSItems } from '../utils/progressStore'
 import Loader from '../components/Loader'
 
@@ -16,6 +16,8 @@ export default function SRSFlashcard() {
   const [flipped, setFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'review' | 'learn'>('learn')
+  const [dueCount, setDueCount] = useState(0)
+  const [srsTotal, setSrsTotal] = useState(0)
 
   useEffect(() => {
     setLoading(true)
@@ -26,40 +28,91 @@ export default function SRSFlashcard() {
     })
   }, [category])
 
+  const refreshCounts = useCallback(() => {
+    const due = getDueSRSItems().filter(s => s.type === category).length
+    const total = getSRSItems().filter(s => s.type === category).length
+    setDueCount(due)
+    setSrsTotal(total)
+  }, [category])
+
   const buildQueue = useCallback(() => {
-    const due = getDueSRSItems().filter(s => s.type === category)
-    if (due.length > 0 && mode === 'review') {
-      const items = due.map(d => data.find((item: any) => item.char === d.char)).filter(Boolean) as QuizItem[]
-      if (items.length > 0) { setQueue(items); setIndex(0); setFlipped(false); return }
+    refreshCounts()
+    const dueItems = getDueSRSItems().filter(s => s.type === category)
+    if (mode === 'review' && dueItems.length > 0) {
+      const items = dueItems
+        .map(d => data.find((item: any) => item.char === d.char))
+        .filter(Boolean) as QuizItem[]
+      if (items.length > 0) {
+        setQueue(items)
+        setIndex(0)
+        setFlipped(false)
+        return
+      }
     }
     setQueue(data)
     setIndex(Math.floor(Math.random() * data.length))
     setFlipped(false)
-  }, [data, category, mode])
+  }, [data, category, mode, refreshCounts])
 
-  useEffect(() => { if (data.length > 0) buildQueue() }, [data, buildQueue])
+  useEffect(() => {
+    if (data.length > 0) buildQueue()
+  }, [data, buildQueue])
 
-  const current = queue[index] as any
-  if (!current) return <div className="text-center text-text-muted py-12">কোনো ডেটা নেই</div>
+  useEffect(() => {
+    refreshCounts()
+  }, [mode, refreshCounts])
 
-  const totalSRS = getSRSItems().filter(s => s.type === category).length
-
-  const handleRating = (correct: boolean) => {
+  const handleRating = useCallback((correct: boolean) => {
     playClick()
-    updateSRSItem(current.char, category, correct)
+    const currentItem = queue[index]
+    if (!currentItem) return
+    updateSRSItem(currentItem.char, category, correct)
     if (correct) playCorrect(); else playWrong()
+    refreshCounts()
+
     const next = index + 1
     if (next < queue.length) {
       setIndex(next)
       setFlipped(false)
-    } else {
-      setQueue(prev => {
-        if (prev.length <= 1) return data
-        return prev
-      })
-      setIndex(Math.floor(Math.random() * data.length))
-      setFlipped(false)
+      return
     }
+
+    if (mode === 'review') {
+      const remaining = getDueSRSItems().filter(s => s.type === category)
+      if (remaining.length > 0) {
+        const nextItems = remaining
+          .map(d => data.find((item: any) => item.char === d.char))
+          .filter(Boolean) as QuizItem[]
+        if (nextItems.length > 0) {
+          setQueue(nextItems)
+          setIndex(0)
+          setFlipped(false)
+          return
+        }
+      }
+      playComplete()
+    }
+
+    setMode('learn')
+    setQueue(data)
+    setIndex(Math.floor(Math.random() * data.length))
+    setFlipped(false)
+  }, [queue, index, category, data, mode, refreshCounts])
+
+  if (loading) return <Loader text="SRS কার্ড লোড হচ্ছে..." />
+
+  const current = queue[index] as any
+  if (!current || queue.length === 0) {
+    return (
+      <div className="text-center py-12 animate-fadeIn max-w-sm mx-auto">
+        <i className="fa-regular fa-face-smile text-5xl text-text-muted mb-4 block" />
+        <p className="text-text-muted font-semibold">কোনো কার্ড নেই</p>
+        <p className="text-text-muted/60 text-sm mt-1">অন্য ক্যাটাগরি নির্বাচন করুন বা লার্ন মোডে যান</p>
+        <button onClick={buildQueue} className="btn-primary mt-4">
+          <i className="fa-solid fa-rotate mr-2" />রিলোড
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -87,8 +140,7 @@ export default function SRSFlashcard() {
 
       {mode === 'review' && (
         <div className="text-center text-xs text-text-muted mb-4">
-          <i className="fa-solid fa-clock mr-1" />রিভিউর অপেক্ষায়: {getDueSRSItems().filter(s => s.type === category).length}টি
-          (মোট SRS: {totalSRS})
+          <i className="fa-solid fa-clock mr-1" />রিভিউর অপেক্ষায়: {dueCount}টি (মোট SRS: {srsTotal})
         </div>
       )}
 
@@ -129,15 +181,22 @@ export default function SRSFlashcard() {
         )}
       </div>
 
-      <div className="flex justify-center gap-3 mt-4">
+      <div className="flex justify-center mt-4">
         <button onClick={() => speak(current.char)} className="btn-primary px-4">
-          <i className="fa-solid fa-volume-high" />
+          <i className="fa-solid fa-volume-high mr-1" />উচ্চারণ
         </button>
       </div>
 
-      <div className="text-center mt-3 text-text-muted text-xs">
-        <i className="fa-regular fa-bookmark mr-1" />মোট: {queue.length > 0 ? `${index + 1}/${queue.length}` : `${index + 1}/${data.length}`}
+      <div className="flex items-center justify-between mt-3 text-text-muted text-xs">
+        <span><i className="fa-regular fa-bookmark mr-1" />{index + 1} / {queue.length}</span>
+        <span><i className="fa-solid fa-layer-group mr-1" />{mode === 'review' ? 'রিভিউ' : 'লার্ন'}</span>
       </div>
+
+      {mode === 'review' && queue.length > 1 && (
+        <div className="w-full bg-surface-alt rounded-full h-1 mt-2">
+          <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${((index + 1) / queue.length) * 100}%` }} />
+        </div>
+      )}
     </div>
   )
 }

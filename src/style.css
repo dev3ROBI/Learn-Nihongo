@@ -142,6 +142,25 @@ body {
   transform: scale(1.1);
 }
 
+/* Modal backdrop blur */
+@keyframes modalBackdrop {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(6px); }
+}
+
+.animate-modal-backdrop {
+  animation: modalBackdrop 0.3s ease-out both;
+}
+
+@keyframes modalSlideUp {
+  0%   { opacity: 0; transform: translateY(24px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-modal {
+  animation: modalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Smooth page transitions */
 main > div {
   animation: fadeIn 0.35s ease-out both;
