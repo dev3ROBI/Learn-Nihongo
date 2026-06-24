@@ -3,6 +3,8 @@ import type { IHiragana, IKatakana, IKanji, QuizItem } from '../types'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { getRandomItems, getOptions, getKanjiReading, getKanjiReadingOptions } from '../utils/gameHelpers'
 import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
+import { saveQuizResult } from '../utils/progressStore'
+import type { Mistake } from '../utils/progressStore'
 
 type Tab = 'hiragana' | 'katakana' | 'kanji' | 'kanji-reverse' | 'kanji-hiragana' | 'hiragana-kanji'
 
@@ -44,6 +46,8 @@ export default function Quiz() {
   const [finished, setFinished] = useState(false)
   const [streak, setStreak] = useState(0)
   const [bestStreak, setBestStreak] = useState(0)
+  const [mistakes, setMistakes] = useState<Mistake[]>([])
+  const [newBadges, setNewBadges] = useState<string[]>([])
 
   const loadAll = useCallback(async () => {
     const [h, k, kj] = await Promise.all([loadHiragana(), loadKatakana(), loadKanji()])
@@ -106,6 +110,8 @@ export default function Quiz() {
     setFinished(false)
     setStreak(0)
     setBestStreak(0)
+    setMistakes([])
+    setNewBadges([])
   }
 
   const handleAnswer = (answer: string) => {
@@ -124,6 +130,13 @@ export default function Quiz() {
     } else {
       playWrong()
       setStreak(0)
+      setMistakes(prev => [...prev, {
+        question: q.question,
+        correctAnswer: q.correct,
+        userAnswer: answer,
+        category: activeTab,
+        date: new Date().toISOString(),
+      }])
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -131,6 +144,14 @@ export default function Quiz() {
         setSelected(null)
       } else {
         playComplete()
+        const result = saveQuizResult({
+          type: 'quiz',
+          category: activeTab,
+          score: score + (answer === q.correct ? 1 : 0),
+          total: questions.length,
+          mistakes: mistakes,
+        })
+        if (result.newBadges.length > 0) setNewBadges(result.newBadges.map(b => b.name))
         setFinished(true)
       }
     }, 800)
@@ -147,6 +168,11 @@ export default function Quiz() {
       <div className="text-center py-12 animate-pop max-w-sm mx-auto">
         <div className="text-7xl mb-4">{rating.emoji}</div>
         <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-1">কুইজ শেষ!</h2>
+        {newBadges.map((name, i) => (
+          <div key={i} className="bg-primary/10 text-primary font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 text-sm mb-4 animate-pop">
+            <i className="fa-solid fa-medal" />নতুন ব্যাজ: {name}
+          </div>
+        ))}
         <p className="text-primary font-semibold text-lg mb-4">{rating.label}</p>
         <div className="card p-5 mb-6 text-left space-y-2">
           <div className="flex justify-between text-sm">

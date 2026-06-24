@@ -1,37 +1,42 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { QuizItem, IKanji, IHiragana, IKatakana } from '../types'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { shuffleArray, getRandomItems, getOptions } from '../utils/gameHelpers'
 import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
-import { saveQuizResult } from '../utils/progressStore'
+import { saveQuizResult, getStats } from '../utils/progressStore'
 import type { Mistake } from '../utils/progressStore'
 
-export default function RandomChallenge() {
+function getTodaySeed(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export default function DailyChallenge() {
   const [questions, setQuestions] = useState<any[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [finished, setFinished] = useState(false)
   const [started, setStarted] = useState(false)
-  const [streak, setStreak] = useState(0)
-  const [bestStreak, setBestStreak] = useState(0)
   const [mistakes, setMistakes] = useState<Mistake[]>([])
   const [newBadges, setNewBadges] = useState<string[]>([])
+  const stats = getStats()
 
   const generate = useCallback(async () => {
     const [h, k, kj] = await Promise.all([loadHiragana(), loadKatakana(), loadKanji()])
+    const count = 5
     const mixed: QuizItem[] = shuffleArray([
-      ...getRandomItems(h, 4),
-      ...getRandomItems(k, 3),
-      ...getRandomItems(kj, 3),
-    ])
+      ...getRandomItems(h, Math.min(count, h.length)),
+      ...getRandomItems(k, Math.min(count, k.length)),
+      ...getRandomItems(kj, Math.min(count, kj.length)),
+    ]).slice(0, 10)
 
     const qs = mixed.map(item => {
       const isKanji = 'meaning' in item
       const correct = isKanji ? (item as IKanji).bangla : (item as IHiragana | IKatakana).bangla
       const pool = isKanji ? kj : h
       const options = getOptions(correct, pool, 'bangla' as keyof QuizItem)
-      return { question: item.char, options, correct }
+      const category = isKanji ? 'কানজি' : (item as any).romaji ? 'হিরাগানা' : 'কাটাকানা'
+      return { question: item.char, options, correct, category, item }
     })
 
     setQuestions(qs)
@@ -40,32 +45,30 @@ export default function RandomChallenge() {
     setSelected(null)
     setFinished(false)
     setStarted(true)
-    setStreak(0)
-    setBestStreak(0)
     setMistakes([])
     setNewBadges([])
+  }, [])
+
+  useEffect(() => {
+    if (getTodaySeed()) generate()
   }, [])
 
   const handleAnswer = (answer: string) => {
     if (selected !== null || finished) return
     playClick()
     setSelected(answer)
-    if (answer === questions[currentIndex].correct) {
+    const q = questions[currentIndex]
+    const isCorrect = answer === q.correct
+    if (isCorrect) {
       playCorrect()
       setScore(prev => prev + 1)
-      setStreak(prev => {
-        const n = prev + 1
-        if (n > bestStreak) setBestStreak(n)
-        return n
-      })
     } else {
-      playWrong();
-      setStreak(0)
+      playWrong()
       setMistakes(prev => [...prev, {
         question: q.question,
         correctAnswer: q.correct,
         userAnswer: answer,
-        category: 'random',
+        category: q.category,
         date: new Date().toISOString(),
       }])
     }
@@ -76,13 +79,15 @@ export default function RandomChallenge() {
       } else {
         playComplete()
         const result = saveQuizResult({
-          type: 'random',
-          category: 'random-challenge',
-          score: score + (q.correct === q.correct ? 1 : 0),
+          type: 'daily',
+          category: 'daily-challenge',
+          score: score + (isCorrect ? 1 : 0),
           total: questions.length,
           mistakes: mistakes,
         })
-        if (result.newBadges.length > 0) setNewBadges(result.newBadges.map(b => b.name))
+        if (result.newBadges.length > 0) {
+          setNewBadges(result.newBadges.map(b => b.name))
+        }
         setFinished(true)
       }
     }, 800)
@@ -90,27 +95,30 @@ export default function RandomChallenge() {
 
   if (!started) {
     return (
-      <div className="text-center py-12 animate-fadeIn">
+      <div className="text-center py-12 animate-fadeIn max-w-sm mx-auto">
         <div className="text-6xl mb-4">
-          <i className="fa-solid fa-dice text-primary" />
+          <i className="fa-solid fa-calendar-day text-primary" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">র‌্যান্ডম চ্যালেঞ্জ</h1>
-        <p className="text-text-muted mb-6 text-sm max-w-xs mx-auto">
-          হিরাগানা, কাটাকানা ও কানজি মিক্সড ১০টি প্রশ্ন! সব ক্যাটাগরি থেকে র‌্যান্ডম প্রশ্ন আসবে।
-        </p>
-        <button onClick={generate} className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">ডেইলি চ্যালেঞ্জ</h1>
+        <p className="text-text-muted text-sm mb-2">প্রতিদিন ১০টি করে নতুন প্রশ্ন!</p>
+        {stats.studiedToday && (
+          <div className="inline-flex items-center gap-2 bg-success-bg text-success px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <i className="fa-solid fa-check-circle" />আজকের চ্যালেঞ্জ শেষ
+          </div>
+        )}
+        <button onClick={generate} className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4 mt-4">
           <i className="fa-solid fa-play mr-2" />শুরু করুন!
         </button>
       </div>
     )
   }
 
-  if (finished || questions.length === 0) {
-    const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0
+  if (finished) {
+    const pct = Math.round((score / questions.length) * 100)
     return (
       <div className="text-center py-12 animate-pop max-w-sm mx-auto">
-        <div className="text-6xl mb-4">🏆</div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-1">চ্যালেঞ্জ শেষ!</h2>
+        <div className="text-6xl mb-4">{pct >= 70 ? '🎉' : '💪'}</div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-1">ডেইলি চ্যালেঞ্জ শেষ!</h2>
         {newBadges.map((name, i) => (
           <div key={i} className="bg-primary/10 text-primary font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 text-sm mb-4 animate-pop">
             <i className="fa-solid fa-medal" />নতুন ব্যাজ: {name}
@@ -118,19 +126,12 @@ export default function RandomChallenge() {
         ))}
         <div className="card p-5 mb-6 text-left space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">সঠিক উত্তর</span>
+            <span className="text-text-muted">সঠিক</span>
             <span className="font-bold text-success">{score}/{questions.length}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-text-muted">নির্ভুলতা</span>
             <span className="font-bold text-text-main">{pct}%</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-text-muted">সর্বোচ্চ ধারাবাহিক</span>
-            <span className="font-bold text-primary">{bestStreak}×</span>
-          </div>
-          <div className="w-full bg-surface-alt rounded-full h-2 mt-1">
-            <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
         <button onClick={generate} className="btn-primary">
@@ -146,7 +147,7 @@ export default function RandomChallenge() {
   return (
     <div className="max-w-lg mx-auto animate-fadeIn">
       <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-4">
-        <i className="fa-solid fa-dice text-primary mr-2" />র‌্যান্ডম চ্যালেঞ্জ
+        <i className="fa-solid fa-calendar-day text-primary mr-2" />ডেইলি চ্যালেঞ্জ
       </h1>
 
       <div className="w-full bg-surface-alt rounded-full h-1.5 mb-4">
@@ -154,15 +155,8 @@ export default function RandomChallenge() {
       </div>
 
       <div className="flex items-center justify-between text-text-muted text-xs mb-4">
-        <span><i className="fa-solid fa-circle text-[6px] text-primary mr-1 align-middle" /> {currentIndex + 1}/{questions.length}</span>
-        <span className="flex items-center gap-3">
-          <span><i className="fa-solid fa-star text-[10px] text-primary mr-1 align-middle" /> {score}</span>
-          {streak >= 3 && (
-            <span className="text-primary font-semibold animate-pop inline-flex items-center gap-1">
-              <i className="fa-solid fa-fire" /> {streak}
-            </span>
-          )}
-        </span>
+        <span>{currentIndex + 1}/{questions.length}</span>
+        <span><i className="fa-solid fa-star text-primary mr-1" />{score}</span>
       </div>
 
       <div className="card p-6 sm:p-8 mb-5 text-center w-full">

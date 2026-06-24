@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
 import { getRandomItems, getOptions } from '../utils/gameHelpers'
 import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
+import { saveQuizResult } from '../utils/progressStore'
+import type { Mistake } from '../utils/progressStore'
 
 type Category = 'hiragana' | 'katakana' | 'kanji'
 
@@ -16,6 +18,8 @@ export default function TimeAttack() {
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'over'>('idle')
   const [streak, setStreak] = useState(0)
   const [bestStreak, setBestStreak] = useState(0)
+  const [mistakes, setMistakes] = useState<Mistake[]>([])
+  const [newBadges, setNewBadges] = useState<string[]>([])
 
   useEffect(() => {
     Promise.all([loadHiragana(), loadKatakana(), loadKanji()]).then(([h, k, kj]) => {
@@ -39,6 +43,8 @@ export default function TimeAttack() {
     setGameState('playing')
     setStreak(0)
     setBestStreak(0)
+    setMistakes([])
+    setNewBadges([])
   }, [data])
 
   useEffect(() => {
@@ -50,6 +56,10 @@ export default function TimeAttack() {
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
     return () => clearInterval(timer)
   }, [gameState, timeLeft])
+
+  useEffect(() => {
+    if (gameState === 'over') handleGameOver()
+  }, [gameState])
 
   const handleAnswer = (answer: string) => {
     if (selected !== null || gameState !== 'playing') return
@@ -67,6 +77,13 @@ export default function TimeAttack() {
     } else {
       playWrong()
       setStreak(0)
+      setMistakes(prev => [...prev, {
+        question: questions[currentIndex].question,
+        correctAnswer: questions[currentIndex].correct,
+        userAnswer: answer,
+        category,
+        date: new Date().toISOString(),
+      }])
     }
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -76,6 +93,17 @@ export default function TimeAttack() {
         setGameState('over')
       }
     }, 500)
+  }
+
+  function handleGameOver() {
+    const result = saveQuizResult({
+      type: 'timeattack',
+      category,
+      score,
+      total: currentIndex + 1,
+      mistakes,
+    })
+    if (result.newBadges.length > 0) setNewBadges(result.newBadges.map(b => b.name))
   }
 
   if (gameState === 'idle') {
@@ -116,6 +144,11 @@ export default function TimeAttack() {
       <div className="text-center py-12 animate-pop max-w-sm mx-auto">
         <div className="text-6xl mb-4">⏰</div>
         <h2 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">সময় শেষ!</h2>
+        {newBadges.map((name, i) => (
+          <div key={i} className="bg-primary/10 text-primary font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 text-sm mb-4 animate-pop">
+            <i className="fa-solid fa-medal" />নতুন ব্যাজ: {name}
+          </div>
+        ))}
         <div className="card p-5 mb-6 text-left space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-text-muted">সঠিক উত্তর</span>

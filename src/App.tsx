@@ -13,6 +13,12 @@ import Matching from './pages/Matching'
 import TimeAttack from './pages/TimeAttack'
 import RandomChallenge from './pages/RandomChallenge'
 import About from './pages/About'
+import MistakeReview from './pages/MistakeReview'
+import DailyChallenge from './pages/DailyChallenge'
+import CustomQuiz from './pages/CustomQuiz'
+import SRSFlashcard from './pages/SRSFlashcard'
+import ProgressDashboard from './pages/ProgressDashboard'
+import WritingPractice from './pages/WritingPractice'
 
 export default function App() {
   return (
@@ -30,6 +36,12 @@ export default function App() {
         <Route path="/matching" element={<Matching />} />
         <Route path="/timeattack" element={<TimeAttack />} />
         <Route path="/random" element={<RandomChallenge />} />
+        <Route path="/daily" element={<DailyChallenge />} />
+        <Route path="/custom-quiz" element={<CustomQuiz />} />
+        <Route path="/srs" element={<SRSFlashcard />} />
+        <Route path="/mistakes" element={<MistakeReview />} />
+        <Route path="/progress" element={<ProgressDashboard />} />
+        <Route path="/writing" element={<WritingPractice />} />
         <Route path="/about" element={<About />} />
       </Route>
     </Routes>

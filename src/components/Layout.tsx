@@ -5,8 +5,8 @@ const bottomNavItems = [
   { to: '/', label: 'হোম', icon: 'fa-solid fa-house' },
   { to: '/hiragana', label: 'শেখা', icon: 'fa-solid fa-book-open' },
   { to: '/quiz', label: 'কুইজ', icon: 'fa-solid fa-question' },
-  { to: '/flashcard', label: 'কার্ড', icon: 'fa-solid fa-layer-group' },
-  { to: '/about', label: 'সম্পর্কে', icon: 'fa-solid fa-circle-info' },
+  { to: '/daily', label: 'চ্যালেঞ্জ', icon: 'fa-solid fa-calendar-day' },
+  { to: '/progress', label: 'প্রোগ্রেস', icon: 'fa-solid fa-chart-line' },
 ]
 
 const desktopLinks = [
@@ -19,6 +19,12 @@ const desktopLinks = [
   { to: '/matching', label: 'ম্যাচিং' },
   { to: '/timeattack', label: 'টাইম অ্যাটাক' },
   { to: '/random', label: 'র‍্যান্ডম' },
+  { to: '/daily', label: 'ডেইলি' },
+  { to: '/custom-quiz', label: 'কাস্টম' },
+  { to: '/srs', label: 'SRS' },
+  { to: '/mistakes', label: 'ভুল' },
+  { to: '/writing', label: 'লেখা' },
+  { to: '/progress', label: 'স্ট্যাটস' },
   { to: '/about', label: 'সম্পর্কে' },
 ]
 
