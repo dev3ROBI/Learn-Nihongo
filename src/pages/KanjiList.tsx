@@ -17,13 +17,14 @@ export default function KanjiList() {
     item =>
       item.char.includes(search) ||
       item.bangla.includes(search) ||
+      item.banglaUccharon?.includes(search) ||
       item.meaning.toLowerCase().includes(search.toLowerCase())
   )
 
   if (loading) return <Loader text="কানজি লোড হচ্ছে..." />
 
   return (
-    <div>
+    <div className="animate-fadeIn">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-text-main">
           <i className="fa-solid fa-c text-primary mr-2" />কানজি <span className="text-primary">漢</span>
@@ -35,7 +36,7 @@ export default function KanjiList() {
         <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/50 text-sm" />
         <input
           type="text"
-          placeholder="কানজি বা অর্থ লিখুন..."
+          placeholder="কানজি, বাংলা উচ্চারণ বা অর্থ লিখুন..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="input-field pl-10"
@@ -49,15 +50,15 @@ export default function KanjiList() {
             char={item.char}
             to={`/kanji/${encodeURIComponent(item.char)}`}
             subtitle={item.bangla}
-            sublabel={item.meaning}
+            sublabel={item.banglaUccharon || item.meaning}
           />
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-text-muted py-8 text-sm">
+        <div className="text-center py-12 text-text-muted text-sm">
           <i className="fa-solid fa-circle-exclamation mr-2" />কোনো ফলাফল পাওয়া যায়নি
-        </p>
+        </div>
       )}
     </div>
   )

@@ -1,162 +1,219 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { loadHiragana, loadKatakana, loadKanji } from '../utils/loadData'
-import { getRandomItems, shuffleArray } from '../utils/gameHelpers'
+import { shuffleArray } from '../utils/gameHelpers'
 import { playCorrect, playWrong, playClick, playComplete } from '../utils/sound'
 
-type MatchItem = { id: number; text: string; pair: number }
-type MatchCategory = 'hiragana' | 'katakana' | 'kanji' | 'kanji-hiragana' | 'hiragana-kanji'
+type Mode = 'hiragana' | 'katakana' | 'kanji' | 'kanji-hiragana' | 'hiragana-kanji'
+
+const modes: { key: Mode; label: string }[] = [
+  { key: 'hiragana', label: 'হিরাগানা' },
+  { key: 'katakana', label: 'কাটাকানা' },
+  { key: 'kanji', label: 'কানজি' },
+  { key: 'kanji-hiragana', label: 'কানজি→হিরা' },
+  { key: 'hiragana-kanji', label: 'হিরা→কানজি' },
+]
 
 export default function Matching() {
-  const [category, setCategory] = useState<MatchCategory>('hiragana')
-  const [leftItems, setLeftItems] = useState<MatchItem[]>([])
-  const [rightItems, setRightItems] = useState<MatchItem[]>([])
+  const [mode, setMode] = useState<Mode>('hiragana')
+  const [data, setData] = useState<any[]>([])
+  const [pairs, setPairs] = useState<{ id: number; left: string; right: string }[]>([])
+  const [shuffledLeft, setShuffledLeft] = useState<{ id: number; text: string }[]>([])
+  const [shuffledRight, setShuffledRight] = useState<{ id: number; text: string }[]>([])
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
-  const [matched, setMatched] = useState<number[]>([])
-  const [wrongPair, setWrongPair] = useState<number | null>(null)
+  const [selectedRight, setSelectedRight] = useState<number | null>(null)
+  const [matched, setMatched] = useState<Set<number>>(new Set())
+  const [wrongPair, setWrongPair] = useState<{ left: number; right: number } | null>(null)
+  const [finished, setFinished] = useState(false)
+  const [attempts, setAttempts] = useState(0)
 
-  const loadData = useCallback(async () => {
-    const [h, k, kj] = await Promise.all([loadHiragana(), loadKatakana(), loadKanji()])
+  useEffect(() => {
+    Promise.all([loadHiragana(), loadKatakana(), loadKanji()]).then(([h, k, kj]) => {
+      const all = mode === 'hiragana' ? h : mode === 'katakana' ? k : kj
+      setData(all)
+    })
+  }, [mode])
 
-    if (category === 'kanji-hiragana') {
-      const items = getRandomItems(kj, 5)
-      const left: MatchItem[] = items.map((item: any, i: number) => ({ id: i, text: item.char, pair: i }))
-      const right: MatchItem[] = shuffleArray(items.map((item: any, i: number) => ({
-        id: i + 100,
-        text: item.kunReading || item.onReading,
-        pair: i,
-      })))
-      setLeftItems(left)
-      setRightItems(right)
-    } else if (category === 'hiragana-kanji') {
-      const items = getRandomItems(kj, 5)
-      const left: MatchItem[] = items.map((item: any, i: number) => ({
+  useEffect(() => {
+    if (data.length === 0) return
+    generateGame()
+  }, [data, mode])
+
+  function generateGame() {
+    const shuffled = shuffleArray([...data]).slice(0, 5)
+
+    let pairs: { id: number; left: string; right: string }[]
+    if (mode === 'kanji-hiragana') {
+      pairs = shuffled.map((item: any, i: number) => ({
         id: i,
-        text: item.kunReading || item.onReading,
-        pair: i,
+        left: item.char,
+        right: item.onReading || item.kunReading || '—',
       }))
-      const right: MatchItem[] = shuffleArray(items.map((item: any, i: number) => ({ id: i + 100, text: item.char, pair: i })))
-      setLeftItems(left)
-      setRightItems(right)
+    } else if (mode === 'hiragana-kanji') {
+      pairs = shuffled.map((item: any, i: number) => ({
+        id: i,
+        left: item.onReading || item.kunReading || '—',
+        right: item.char,
+      }))
     } else {
-      const raw: any[] = category === 'hiragana' ? h : k
-      const items = getRandomItems(raw, 5)
-      const left: MatchItem[] = items.map((item: any, i: number) => ({ id: i, text: item.char, pair: i }))
-      const right: MatchItem[] = shuffleArray(items.map((item: any, i: number) => ({ id: i + 100, text: item.bangla, pair: i })))
-      setLeftItems(left)
-      setRightItems(right)
+      pairs = shuffled.map((item: any, i: number) => ({
+        id: i,
+        left: item.char,
+        right: item.bangla,
+      }))
     }
 
-    setMatched([])
+    const leftItems = pairs.map(p => ({ id: p.id, text: p.left }))
+    const rightItems = pairs.map(p => ({ id: p.id, text: p.right }))
+
+    setPairs(pairs)
+    setShuffledLeft(shuffleArray(leftItems))
+    setShuffledRight(shuffleArray(rightItems))
     setSelectedLeft(null)
+    setSelectedRight(null)
+    setMatched(new Set())
     setWrongPair(null)
-  }, [category])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  const handleLeftClick = (id: number) => {
-    if (matched.includes(id)) return
-    playClick()
-    setSelectedLeft(id)
-    setWrongPair(null)
+    setFinished(false)
+    setAttempts(0)
   }
 
-  const handleRightClick = (id: number) => {
-    if (selectedLeft === null) return
-    const leftItem = leftItems.find(l => l.id === selectedLeft)
-    const rightItem = rightItems.find(r => r.id === id)
+  useEffect(() => {
+    if (selectedLeft === null || selectedRight === null) return
+    setAttempts(prev => prev + 1)
 
-    if (leftItem && rightItem && leftItem.pair === rightItem.pair) {
+    if (selectedLeft === selectedRight) {
       playCorrect()
-      const next = [...matched, leftItem.id]
-      setMatched(next)
+      const newMatched = new Set(matched)
+      newMatched.add(selectedLeft)
+      setMatched(newMatched)
       setSelectedLeft(null)
-      if (next.length === 5) playComplete()
+      setSelectedRight(null)
+      if (newMatched.size === pairs.length) {
+        playComplete()
+        setFinished(true)
+      }
     } else {
       playWrong()
-      setWrongPair(id)
+      setWrongPair({ left: selectedLeft, right: selectedRight })
       setTimeout(() => {
-        setWrongPair(null)
         setSelectedLeft(null)
-      }, 600)
+        setSelectedRight(null)
+        setWrongPair(null)
+      }, 700)
     }
-  }
-
-  const isComplete = matched.length === 5
-
-  const leftLabel = category === 'hiragana-kanji' ? 'হিরাগানা/কাটাকানা' : 'জাপানি অক্ষর'
-  const rightLabel = category === 'kanji-hiragana' ? 'হিরাগানা/কাটাকানা' : category === 'hiragana-kanji' ? 'কানজি' : 'বাংলা'
+  }, [selectedRight])
 
   return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-6">
-        <i className="fa-solid fa-puzzle-piece text-primary mr-2" />ম্যাচিং গেম
+    <div className="animate-fadeIn max-w-lg mx-auto">
+      <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-4">
+        <i className="fa-solid fa-object-group text-primary mr-2" />ম্যাচিং
       </h1>
-      <p className="text-text-muted mb-4 text-sm">বামের সাথে ডানের জোড়া মিলান।</p>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {(['hiragana', 'katakana', 'kanji', 'kanji-hiragana', 'hiragana-kanji'] as MatchCategory[]).map(c => (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {modes.map(m => (
           <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition ${
-              category === c
-                ? 'bg-primary text-white'
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+              mode === m.key
+                ? 'bg-primary text-white shadow-md scale-105'
                 : 'bg-surface text-text-muted hover:bg-surface-hover border border-border'
             }`}
           >
-            {c === 'hiragana' ? 'হিরাগানা' : c === 'katakana' ? 'কাটাকানা' : c === 'kanji-hiragana' ? 'কানজি→হিরা' : c === 'hiragana-kanji' ? 'হিরা→কানজি' : 'কানজি'}
+            {m.label}
           </button>
         ))}
       </div>
 
-      {isComplete ? (
-        <div className="text-center py-12">
+      {!finished && (
+        <div className="flex items-center justify-between text-text-muted text-xs mb-4">
+          <span><i className="fa-solid fa-check-circle text-primary mr-1" /> {matched.size}/{pairs.length}</span>
+          <span><i className="fa-solid fa-mouse-pointer mr-1" /> {attempts} বার চেষ্টা</span>
+        </div>
+      )}
+
+      {finished ? (
+        <div className="text-center py-8 animate-pop">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-xl sm:text-2xl font-bold text-text-main mb-4">অভিনন্দন! সব মিলেছে!</h2>
-          <button onClick={loadData} className="btn-primary">
+          <h2 className="text-2xl font-bold text-text-main mb-2">সব মিলেছে!</h2>
+          <div className="card p-4 mb-4 inline-block">
+            <p className="text-sm text-text-muted">
+              <i className="fa-solid fa-mouse-pointer mr-1" />মোট {attempts} বার চেষ্টায় শেষ
+            </p>
+            {attempts <= pairs.length && (
+              <p className="text-primary font-semibold text-sm mt-1">
+                <i className="fa-solid fa-star mr-1" />পারফেক্ট গেম!
+              </p>
+            )}
+          </div>
+          <button onClick={generateGame} className="btn-primary">
             <i className="fa-solid fa-rotate mr-2" />আবার খেলুন
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-xl mx-auto">
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">{leftLabel}</h3>
-            {leftItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => handleLeftClick(item.id)}
-                className={`w-full p-3 sm:p-4 rounded-xl text-lg sm:text-xl text-center transition-all duration-200 ${
-                  matched.includes(item.id)
-                    ? 'bg-success-bg border-2 border-success text-success'
-                    : selectedLeft === item.id
-                    ? 'bg-primary/10 border-2 border-primary text-text-main'
-                    : 'bg-surface border border-border text-text-main hover:bg-surface-hover'
-                }`}
-              >
-                {item.text}
-              </button>
-            ))}
-          </div>
+        <>
+          <p className="text-xs text-text-muted text-center mb-4 uppercase tracking-wider">
+            বাম থেকে একটি এবং ডান থেকে একটি নির্বাচন করে মিলান
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <div className="space-y-2">
+              {shuffledLeft.map(item => {
+                const isMatched = matched.has(item.id)
+                const isSelected = selectedLeft === item.id
+                const isWrong = wrongPair?.left === item.id
+                let cardClass = 'border border-border text-text-main'
+                if (isMatched) cardClass = 'border-success/50 text-success bg-success-bg/30 opacity-60 cursor-default'
+                else if (isSelected) cardClass = 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30 scale-105'
+                else if (isWrong) cardClass = 'border-error bg-error-bg/30 text-error ring-2 ring-error/30'
+                else cardClass = 'bg-surface hover:bg-surface-hover border border-border text-text-main hover:scale-[1.02]'
 
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">{rightLabel}</h3>
-            {rightItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => handleRightClick(item.id)}
-                className={`w-full p-3 sm:p-4 rounded-xl text-base sm:text-lg text-center transition-all duration-200 ${
-                  matched.some(m => leftItems.find(l => l.id === m)?.pair === item.pair)
-                    ? 'bg-success-bg border-2 border-success text-success'
-                    : wrongPair === item.id
-                    ? 'bg-error-bg border-2 border-error text-error'
-                    : 'bg-surface border border-border text-text-main hover:bg-surface-hover'
-                }`}
-              >
-                {item.text}
-              </button>
-            ))}
+                return (
+                  <button
+                    key={`l-${item.id}`}
+                    onClick={() => {
+                      if (isMatched || selectedLeft !== null) return
+                      playClick()
+                      setSelectedLeft(item.id)
+                    }}
+                    disabled={isMatched || selectedLeft !== null}
+                    className={`${cardClass} rounded-xl w-full p-3 text-base sm:text-lg font-medium transition-all duration-200 disabled:cursor-default active:scale-95 shadow-sm text-center`}
+                  >
+                    {item.text}
+                    {isMatched && <i className="fa-solid fa-check ml-1.5 text-success text-xs" />}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="space-y-2">
+              {shuffledRight.map(item => {
+                const isMatched = matched.has(item.id)
+                const isSelected = selectedRight === item.id
+                const isWrong = wrongPair?.right === item.id
+                let cardClass = 'border border-border text-text-main'
+                if (isMatched) cardClass = 'border-success/50 text-success bg-success-bg/30 opacity-60 cursor-default'
+                else if (isSelected) cardClass = 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30 scale-105'
+                else if (isWrong) cardClass = 'border-error bg-error-bg/30 text-error ring-2 ring-error/30'
+                else cardClass = 'bg-surface hover:bg-surface-hover border border-border text-text-main hover:scale-[1.02]'
+
+                return (
+                  <button
+                    key={`r-${item.id}`}
+                    onClick={() => {
+                      if (isMatched || selectedLeft === null || selectedRight !== null) return
+                      playClick()
+                      setSelectedRight(item.id)
+                    }}
+                    disabled={isMatched || selectedLeft === null || selectedRight !== null}
+                    className={`${cardClass} rounded-xl w-full p-3 text-sm sm:text-base font-medium transition-all duration-200 disabled:cursor-default active:scale-95 shadow-sm text-center`}
+                  >
+                    {item.text}
+                    {isMatched && <i className="fa-solid fa-check ml-1.5 text-success text-xs" />}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

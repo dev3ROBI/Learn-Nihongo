@@ -21,6 +21,7 @@ export interface IKanji {
   kunReading: string;
   example: string;
   bangla: string;
+  banglaUccharon?: string;
 }
 
 export type QuizItem = IHiragana | IKatakana | IKanji;
